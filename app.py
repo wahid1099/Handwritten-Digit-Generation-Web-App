@@ -30,7 +30,7 @@ class Generator(torch.nn.Module):
 # Initialize and load the model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 G = Generator().to(device)
-G.load_state_dict(torch.load('cvae_mnist.pth', map_location=device))
+G.load_state_dict(torch.load('mnist_generator.pth', map_location=device))
 G.eval()
 
 # Streamlit app
