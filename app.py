@@ -3,7 +3,6 @@ import streamlit as st
 import torch
 import numpy as np
 from PIL import Image
-import io
 
 # Load the generator model
 class Generator(torch.nn.Module):
@@ -47,7 +46,7 @@ if st.button('Generate Digits'):
         
         generated_images = G(z, labels).detach().cpu()
         
-        # Display images
+        # Display images in columns
         cols = st.columns(5)
         for i in range(5):
             img = generated_images[i].squeeze().numpy()
@@ -55,4 +54,8 @@ if st.button('Generate Digits'):
             img = (img * 255).astype(np.uint8)
             
             pil_img = Image.fromarray(img)
-            cols[i].image(pil_img, caption=f'Digit {digit}', use_column_width=True)
+            cols[i].image(
+                pil_img, 
+                caption=f'Digit {digit}',
+                use_container_width=True  # Updated parameter
+            )
