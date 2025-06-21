@@ -1,46 +1,27 @@
 # app.py
-import streamlit as st
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
+import streamlit as st, torch, torch.nn as nn
 from torchvision.utils import make_grid
 
-class DigitGenerator(torch.nn.Module):
-    def __init__(self):
+class Decoder(nn.Module):
+    def __init__(self,z_dim=20):
         super().__init__()
-        self.fc = torch.nn.Sequential(
-            torch.nn.Linear(10 + 100, 128),
-            torch.nn.ReLU(),
-            torch.nn.Linear(128, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 784),
-            torch.nn.Tanh()
-        )
+        self.fc = nn.Linear(z_dim+10,64*7*7)
+        self.deconv = nn.Sequential(nn.ConvTranspose2d(64,32,3,2,1,1),nn.ReLU(),
+                                    nn.ConvTranspose2d(32,1,3,2,1,1),nn.Sigmoid())
+    def forward(self,z,y):
+        z = torch.cat([z, torch.eye(10)[y]],1)
+        h = self.fc(z).view(-1,64,7,7)
+        return self.deconv(h)
 
-    def forward(self, noise, labels):
-        x = torch.cat([noise, labels], dim=1)
-        return self.fc(x).view(-1, 1, 28, 28)
+dec = Decoder(); dec.load_state_dict(torch.load('cvae_mnist.pth',map_location='cpu'),strict=False)
+dec.eval()
 
-def one_hot(labels, num_classes=10):
-    return torch.eye(num_classes)[labels]
-
-def generate_images(model, digit, n=5):
-    model.eval()
-    noise = torch.randn(n, 100)
-    labels = one_hot(torch.tensor([digit] * n))
+st.title("MNIST Digit Generator")
+d = st.selectbox("Digit",list(range(10)))
+if st.button("Generate"):
     with torch.no_grad():
-        imgs = model(noise, labels)
-    return imgs
-
-# Load model
-model = DigitGenerator()
-model.load_state_dict(torch.load("digit_generator.pth", map_location="cpu"))
-
-# Web UI
-st.title("Handwritten Digit Generator")
-digit = st.selectbox("Select a digit to generate:", list(range(10)))
-if st.button("Generate Images"):
-    imgs = generate_images(model, digit)
-    grid = make_grid(imgs, nrow=5, normalize=True)
-    npimg = grid.numpy().transpose((1, 2, 0))
-    st.image(npimg, caption=f"Generated Digit: {digit}", width=300)
+        z = torch.randn(5,20)
+        lbl = torch.tensor([d]*5)
+        imgs = dec(z,lbl).cpu()
+    grid = make_grid(imgs,nrow=5,padding=5,normalize=True)
+    st.image(grid.permute(1,2,0).numpy(),width=400)
