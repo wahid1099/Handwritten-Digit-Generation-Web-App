@@ -1,6 +1,5 @@
-
 streamlit
-torch==2.2.2+cpu      # or the latest CPU wheel shown on pytorch.org
-torchvision==0.17.2+cpu
+torch
+torchvision
 numpy
 pillow
